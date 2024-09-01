@@ -1,0 +1,128 @@
+#Task 1 - Provide a detailed report on the top 5 regions with the highest total sales? This should include the total sales amount for each region.
+
+Select Region, sum(Sales) as Total_sales  from 
+`global-superstore_orders_final_list`
+group by Region order by Total_sales desc limit 5;
+
+#Task 2 - Please identify and summarize the category that has generated the highest total sales. Include details of the sales figures associated with this top category.
+
+select Category, sum(Sales) as Total_sales 
+from `global-superstore_orders_final_list`
+group by Category order by Total_sales desc;
+
+#Task 3 - I need an analysis of the top 5 sub-categories based on sales volume. The report should list these sub-categories along with their corresponding sales figures.
+
+select `Sub-Category` , sum(Sales) as Total_sales from 
+`global-superstore_orders_final_list`
+group by `Sub-Category` order by Total_sales desc limit 5;
+
+#Task 4 - Could you generate a report on the top 5 markets that have achieved the highest total sales? Include the total sales amount for each of these markets.
+
+select Market , sum(Sales) as Total_sales from
+`global-superstore_orders_final_list`
+group by Market Order by Total_sales desc limit 5;
+
+#Task 5 - Please determine which market has recorded the highest quantity of products sold. Include the total quantity sold for that market in your report.
+
+select Market , sum(Quantity) as Total_qty from 
+`global-superstore_orders_final_list`
+group by Market order by Total_qty desc limit 5;
+
+#Task 6 - Provide which customer ID has generated the highest Sales. Please provide a summary of the total Sales associated with this customer Id.
+
+select `Customer ID` , sum(Sales) as Total_Sales from 
+`global-superstore_orders_final_list`
+group by `Customer ID` order by Total_Sales desc limit 5;
+
+#Task 7 - Identify the customers who have returned the highest number of items over the years? The report should include details on the total number of returned items for each customer.
+
+WITH ReturnedOrders AS (
+    SELECT
+        t1.`Customer ID`,
+        YEAR(t1.`Order Date Converted`) AS Year,
+        COUNT(t1.`Order ID`) AS Returned_Order_Count
+    FROM
+        `global-superstore_orders_final_list` t1
+    INNER JOIN
+        `global-superstore_returns_final` t2
+    ON
+        t1.`Order ID` = t2.`Order ID`
+    WHERE
+        t2.`Returned` = 'Yes'
+    GROUP BY
+        t1.`Customer ID`,
+        YEAR(t1.`Order Date Converted`)
+)
+SELECT
+    `Customer ID`,
+    Year,
+    SUM(Returned_Order_Count) AS Total_Returned_Orders
+FROM
+    ReturnedOrders
+GROUP BY
+    `Customer ID`,
+    Year
+ORDER BY
+    Total_Returned_Orders DESC,
+    `Customer ID`,
+    Year;
+
+#Task 8 - Please prepare a comparative analysis of sales figures across different years.
+
+WITH SalesYearly AS (
+    SELECT
+        YEAR(`Order Date Converted`) AS Year,
+        SUM(Sales) AS Total_Sales
+    FROM `global-superstore_orders_final_list`
+    GROUP BY YEAR(`Order Date Converted`)
+)
+SELECT
+    MAX(CASE WHEN Year = 2011 THEN Total_Sales ELSE 0 END) AS Sales_2011,
+    MAX(CASE WHEN Year = 2012 THEN Total_Sales ELSE 0 END) AS Sales_2012,
+    MAX(CASE WHEN Year = 2013 THEN Total_Sales ELSE 0 END) AS Sales_2013,
+    MAX(CASE WHEN Year = 2014 THEN Total_Sales ELSE 0 END) AS Sales_2014
+FROM SalesYearly;
+
+#Task 9 -	Provide the year-over-year sales growth rate percentage. Please provide a detailed report showing the growth rate for each year compared to the previous year.
+
+WITH SalesYearly AS (
+    SELECT
+        YEAR(`Order Date Converted`) AS Year,
+        SUM(Sales) AS Total_Sales
+    FROM `global-superstore_orders_final_list`
+    GROUP BY YEAR(`Order Date Converted`)
+)
+SELECT
+    current.Year AS Current_Year,    
+    previous.Year AS Previous_Year,
+    current.Total_Sales AS Current_Sales,
+    previous.Total_Sales AS Previous_Sales,
+    ((current.Total_Sales - previous.Total_Sales) / previous.Total_Sales) * 100 AS Sales_Growth_Percentage
+FROM SalesYearly AS current
+JOIN SalesYearly AS previous    
+    ON current.Year = previous.Year + 1  
+ORDER BY current.Year;
+
+#Task 10 - Customers who have more frequency purchase with high sales and number of orders over the years.
+
+WITH CustomerSales AS (
+    SELECT
+        `Customer ID`,
+        sum(Sales) as Total_sales,
+        COUNT(DISTINCT `Order ID`) AS Number_of_Orders
+    FROM
+        `global-superstore_orders_final_list`
+    WHERE
+        YEAR(`Order Date Converted`) BETWEEN 2011 AND 2014
+    GROUP BY
+        `Customer ID`
+)
+SELECT
+    `Customer ID`,
+    Total_sales,
+    Number_of_Orders
+FROM
+     CustomerSales
+ORDER BY
+    Total_Sales DESC, Number_of_Orders DESC
+LIMIT 5;
